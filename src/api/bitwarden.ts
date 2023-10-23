@@ -148,27 +148,40 @@ export class Bitwarden {
 
   async logout(): Promise<void> {
     await this.exec(["logout"]);
+    await this.handlePostLogout();
+  }
+
+  private async handlePostLogout() {
     this.clearSessionToken();
     await this.callbacks.logout?.();
   }
 
   async lock(reason?: string, shouldCheckVaultStatus?: boolean): Promise<void> {
-    if (shouldCheckVaultStatus) {
-      const isAuthenticated = (await this.status()).status !== "unauthenticated";
-      if (!isAuthenticated) return;
-    }
+    try {
+      if (shouldCheckVaultStatus) {
+        const isAuthenticated = (await this.status()).status !== "unauthenticated";
+        if (!isAuthenticated) return;
+      }
 
-    if (reason) await this.setLockReason(reason);
-    await this.exec(["lock"]);
-    await this.callbacks.lock?.(reason);
+      if (reason) await this.setLockReason(reason);
+      await this.exec(["lock"]);
+      await this.callbacks.lock?.(reason);
+    } catch (error) {
+      if (!(await this.handleCommonErrors(error))) throw error;
+    }
   }
 
   async unlock(password: string): Promise<string> {
-    const { stdout: sessionToken } = await this.exec(["unlock", password, "--raw"]);
-    this.setSessionToken(sessionToken);
-    await this.clearLockReason();
-    await this.callbacks.unlock?.(password, sessionToken);
-    return sessionToken;
+    try {
+      const { stdout: sessionToken } = await this.exec(["unlock", password, "--raw"]);
+      this.setSessionToken(sessionToken);
+      await this.clearLockReason();
+      await this.callbacks.unlock?.(password, sessionToken);
+      return sessionToken;
+    } catch (error) {
+      if (!(await this.handleCommonErrors(error))) throw error;
+      return "";
+    }
   }
 
   async listItems(): Promise<Item[]> {
@@ -213,6 +226,17 @@ export class Bitwarden {
 
   private isPromptWaitingForMasterPassword(result: ExecaReturnValue): boolean {
     return !!(result.stderr && result.stderr.includes("Master password"));
+  }
+
+  private async handleCommonErrors(error: any) {
+    const errorMessage = (error as ExecaError).stderr;
+    if (!errorMessage) return false;
+
+    if (/not logged in/i.test(errorMessage)) {
+      await this.handlePostLogout();
+      return true;
+    }
+    return false;
   }
 }
 
