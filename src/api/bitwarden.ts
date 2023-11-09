@@ -10,6 +10,28 @@ import { getPasswordGeneratingArgs } from "~/utils/passwords";
 import { getServerUrlPreference } from "~/utils/preferences";
 import { CLINotFoundError, VaultIsLockedError } from "~/utils/errors";
 
+type Env = {
+  BITWARDENCLI_APPDATA_DIR: string;
+  BW_CLIENTSECRET: string;
+  BW_CLIENTID: string;
+  PATH: string;
+  NODE_EXTRA_CA_CERTS?: string;
+  BW_SESSION?: string;
+};
+
+type ActionCallbacks = {
+  login?: () => MaybePromise<void>;
+  logout?: () => MaybePromise<void>;
+  lock?: (reason?: string) => MaybePromise<void>;
+  unlock?: (password: string, sessionToken: string) => MaybePromise<void>;
+};
+
+type ExecProps = {
+  abortController?: AbortController;
+  skipLastActivityUpdate?: boolean;
+  input?: string;
+};
+
 export class Bitwarden {
   private env: Env;
   private initPromise: Promise<void>;
@@ -136,10 +158,6 @@ export class Bitwarden {
     return result;
   }
 
-  async sync(): Promise<void> {
-    await this.exec(["sync"]);
-  }
-
   async login(): Promise<void> {
     await this.exec(["login", "--apikey"]);
     await this.clearLockReason();
@@ -184,22 +202,45 @@ export class Bitwarden {
     }
   }
 
+  async sync(): Promise<void> {
+    try {
+      await this.exec(["sync"]);
+    } catch (error) {
+      if (!(await this.handleCommonErrors(error))) throw error;
+    }
+  }
+
   async listItems(): Promise<Item[]> {
-    const { stdout } = await this.exec(["list", "items"]);
-    const items = JSON.parse<Item[]>(stdout);
-    // Filter out items without a name property (they are not displayed in the bitwarden app)
-    return items.filter((item: Item) => !!item.name);
+    try {
+      const { stdout } = await this.exec(["list", "items"]);
+      const items = JSON.parse<Item[]>(stdout);
+      // Filter out items without a name property (they are not displayed in the bitwarden app)
+      return items.filter((item: Item) => !!item.name);
+    } catch (error) {
+      if (!(await this.handleCommonErrors(error))) throw error;
+      return [];
+    }
   }
 
   async listFolders(): Promise<Folder[]> {
-    const { stdout } = await this.exec(["list", "folders"]);
-    return JSON.parse<Folder[]>(stdout);
+    try {
+      const { stdout } = await this.exec(["list", "folders"]);
+      return JSON.parse<Folder[]>(stdout);
+    } catch (error) {
+      if (!(await this.handleCommonErrors(error))) throw error;
+      return [];
+    }
   }
 
   async getTotp(id: string): Promise<string> {
-    // this could return something like "Not found." but checks for totp code are done before calling this function
-    const { stdout } = await this.exec(["get", "totp", id]);
-    return stdout;
+    try {
+      // this could return something like "Not found." but checks for totp code are done before calling this function
+      const { stdout } = await this.exec(["get", "totp", id]);
+      return stdout;
+    } catch (error) {
+      if (!(await this.handleCommonErrors(error))) throw error;
+      return "";
+    }
   }
 
   async status(): Promise<VaultState> {
@@ -239,25 +280,3 @@ export class Bitwarden {
     return false;
   }
 }
-
-type Env = {
-  BITWARDENCLI_APPDATA_DIR: string;
-  BW_CLIENTSECRET: string;
-  BW_CLIENTID: string;
-  PATH: string;
-  NODE_EXTRA_CA_CERTS?: string;
-  BW_SESSION?: string;
-};
-
-type ActionCallbacks = {
-  login?: () => MaybePromise<void>;
-  logout?: () => MaybePromise<void>;
-  lock?: (reason?: string) => MaybePromise<void>;
-  unlock?: (password: string, sessionToken: string) => MaybePromise<void>;
-};
-
-type ExecProps = {
-  abortController?: AbortController;
-  skipLastActivityUpdate?: boolean;
-  input?: string;
-};
