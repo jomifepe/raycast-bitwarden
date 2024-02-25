@@ -12,7 +12,8 @@
     "pernielsentikaer",
     "eth-p",
     "Yamen",
-    "undefinedzack"
+    "undefinedzack",
+    "anirudhganwal06"
   ],
   "license": "MIT",
   "keywords": [
@@ -163,6 +164,14 @@
       ]
     },
     {
+      "name": "create-folder",
+      "title": "Create Folder",
+      "subtitle": "Bitwarden",
+      "description": "Create a folder in the authenticated Bitwarden vault.",
+      "icon": "create-folder.png",
+      "mode": "view"
+    },
+    {
       "name": "lock-vault",
       "title": "Lock Vault",
       "subtitle": "Bitwarden",
@@ -243,6 +252,14 @@
         {
           "title": "1 Day",
           "value": "86400000"
+        },
+        {
+          "title": "On system lock (experimental)",
+          "value": "-2"
+        },
+        {
+          "title": "On system sleep (experimental)",
+          "value": "-3"
         },
         {
           "title": "Never",
