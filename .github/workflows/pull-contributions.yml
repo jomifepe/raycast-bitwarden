@@ -1,0 +1,19 @@
+name: Pull Contributions from raycast/extensions
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Runs at midnight UTC daily
+
+jobs:
+  update-repository:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Pull contributions
+        run: npx @raycast/api@latest pull-contributions
+
+      - name: Push changes
+        run: git push
