@@ -14,7 +14,9 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Pull contributions
-        run: npx @raycast/api@latest pull-contributions --emoji -I
+        run: npx @raycast/api@latest pull-contributions --emoji --non-interactive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push changes
         run: git push
