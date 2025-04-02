@@ -16,9 +16,13 @@ import {
   CopyLoginUrisActions,
   CopyCustomFieldsActions,
   PasteTotpAction,
+  CopyPublicKeyAction,
 } from "~/components/searchVault/actions";
 import { ItemType } from "~/types/vault";
 import FavoriteItemActions from "~/components/searchVault/actions/FavoriteItemActions";
+import { DebuggingBugReportingActionSection } from "~/components/actions";
+import CopyKeyFingerprintAction from "./actions/CopyKeyFingerprintAction";
+import CopyPrivateKeyAction from "./actions/CopyPrivateKeyAction";
 
 const { primaryAction } = getPreferenceValues();
 
@@ -72,6 +76,13 @@ const VaultItemActionPanel = () => {
           <ShowNotesAction />
         </ActionPanel.Section>
       )}
+      {type === ItemType.SSH_KEY && (
+        <ActionPanel.Section>
+          <CopyPublicKeyAction />
+          <CopyKeyFingerprintAction />
+          <CopyPrivateKeyAction />
+        </ActionPanel.Section>
+      )}
       <ActionPanel.Section title="Custom Fields">
         <CopyCustomFieldsActions />
       </ActionPanel.Section>
@@ -81,6 +92,7 @@ const VaultItemActionPanel = () => {
       <ActionPanel.Section title="Vault Management">
         <VaultManagementActions />
       </ActionPanel.Section>
+      <DebuggingBugReportingActionSection />
       {environment.isDevelopment && (
         <ActionPanel.Section title="Development">
           <Action.CopyToClipboard title="Copy item UUID" content={id} />
